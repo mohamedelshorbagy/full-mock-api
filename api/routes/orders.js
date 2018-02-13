@@ -3,9 +3,10 @@ const router = express.Router();
 
 const Order = require('../models/orders');
 
+const checkAuth = require('../middlewares/check-auth');
 
 /* Create Order */
-router.post('/createOrder', (req, res, next) => {
+router.post('/createOrder',checkAuth , (req, res, next) => {
     const order = new Order({
         product: req.body.product,
         number: req.body.number
@@ -24,6 +25,7 @@ router.post('/createOrder', (req, res, next) => {
         .catch(err => {
             res.status(500).json({
                 status: 500,
+                done: false,
                 error: {
                     message: err
                 }
@@ -34,28 +36,31 @@ router.post('/createOrder', (req, res, next) => {
 
 
 /* GET Orders */
-router.get('/getAllOrders', (req, res, next) => {
+router.get('/getAllOrders',checkAuth , (req, res, next) => {
     Order
         .find({})
         .select('_id product number')
-        .populate('product' , '_id name price')
+        .populate('product', '_id name price')
         .exec()
         .then(result => {
-            if (result.length > 0) {
+            if (result.length >= 1) {
                 res.status(200).json({
+                    done: true,
                     status: 200,
                     count: result.length,
                     orders: result
                 })
             } else {
-                res.status(404).json({
-                    status: 404,
+                res.status(200).json({
+                    status: 200,
+                    done: true,
                     message: 'There\'s no orders right now'
                 })
             }
         })
         .catch(err => {
             res.status(500).json({
+                done: false,
                 error: {
                     message: err
                 }
@@ -66,11 +71,11 @@ router.get('/getAllOrders', (req, res, next) => {
 
 
 /* GET Single Order */
-router.get('/getOrder/:orderId', (req, res, next) => {
+router.get('/getOrder/:orderId',checkAuth , (req, res, next) => {
     const id = req.params.orderId;
     Order.findById(id)
         .select("_id product number")
-        .populate('product' , "_id name price")
+        .populate('product', "_id name price")
         .exec()
         .then(result => {
             res.status(200).json({
@@ -83,7 +88,9 @@ router.get('/getOrder/:orderId', (req, res, next) => {
             res.status(500).json({
                 status: 500,
                 done: false,
-                message: err
+                error: {
+                    message: err
+                }
             })
         })
 
@@ -91,7 +98,7 @@ router.get('/getOrder/:orderId', (req, res, next) => {
 
 
 /* Update Order */
-router.patch('/updateOrder/:orderId', (req, res, next) => {
+router.patch('/updateOrder/:orderId',checkAuth , (req, res, next) => {
     const id = req.params.orderId;
     Order.findById(id).exec()
         .then(respond => {
@@ -109,14 +116,18 @@ router.patch('/updateOrder/:orderId', (req, res, next) => {
                         res.status(500).json({
                             status: 500,
                             done: false,
-                            message: err
+                            error: {
+                                message: err
+                            }
                         })
                     })
             } else {
                 res.status(400).json({
                     done: false,
                     status: 400,
-                    message: "This Order is not found"
+                    error: {
+                        message: "This Order is not found"
+                    }
                 })
 
             }
@@ -124,14 +135,16 @@ router.patch('/updateOrder/:orderId', (req, res, next) => {
             res.status(500).json({
                 done: false,
                 status: 500,
-                message: err
+                error: {
+                    message: err
+                }
             })
         })
 
 })
 
 /* Delete Order */
-router.delete('/deleteOrder/:orderId', (req, res, next) => {
+router.delete('/deleteOrder/:orderId',checkAuth , (req, res, next) => {
     const id = req.params.orderId;
     Order.findById(id).exec()
         .then(respond => {
@@ -149,14 +162,18 @@ router.delete('/deleteOrder/:orderId', (req, res, next) => {
                         res.status(500).json({
                             status: 500,
                             done: false,
-                            message: err
+                            error: {
+                                message: err
+                            }
                         })
                     })
             } else {
                 res.status(500).json({
                     status: 500,
                     done: false,
-                    message: "This Order is not Found"
+                    error: {
+                        message: "This Order is not Found"
+                    }
                 })
             }
         })
@@ -206,9 +223,11 @@ router.get('/help/:unique', (req, res, next) => {
     } else {
         res.status(409).json({
             status: 409,
-            message: 'Unauthoriazed'
+            error: {
+                message: 'Unauthoriazed'
+            }
         })
-     
+
     }
 })
 

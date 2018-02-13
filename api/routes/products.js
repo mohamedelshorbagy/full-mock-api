@@ -4,8 +4,10 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Product = require('../models/products');
 
+const checkAuth = require('../middlewares/check-auth');
+
 // Create Products
-router.post('/createProduct', (req, res, next) => {
+router.post('/createProduct', checkAuth, (req, res, next) => {
     const product = new Product({
         name: req.body.name,
         price: req.body.price
@@ -18,7 +20,9 @@ router.post('/createProduct', (req, res, next) => {
                 res.status(500).json({
                     done: false,
                     status: 500,
-                    message: "This Product is registered"
+                    error: {
+                        message: "This Product is registered"
+                    }
                 })
             } else {
                 console.log("Save");
@@ -59,10 +63,8 @@ router.get('/getAllProducts', (req, res, next) => {
                 })
             } else {
                 res.status(404).json({
-                    done: false,
-                    error: {
-                        message: "There's Not Producst Right Now"
-                    }
+                    done: true,
+                        message: "There's No Producst Right Now"
                 })
             }
         })
@@ -113,7 +115,7 @@ router.get('/getProduct/:productId', (req, res, next) => {
 
 
 // Update Specific Product 
-router.patch('/updateProduct/:productId', (req, res, next) => {
+router.patch('/updateProduct/:productId', checkAuth ,(req, res, next) => {
     const id = req.params.productId;
     Product.findById(id).exec()
         .then(respond => {
@@ -148,7 +150,9 @@ router.patch('/updateProduct/:productId', (req, res, next) => {
                 res.status(403).json({
                     done: false,
                     status: 500,
-                    message: "Can't Find this Product"
+                    error: {
+                        message: "Can't Find this Product"
+                    }
                 })
             }
         })
@@ -166,7 +170,7 @@ router.patch('/updateProduct/:productId', (req, res, next) => {
 })
 
 // Delete Specific Product
-router.delete('/deleteProduct/:productId', (req, res, next) => {
+router.delete('/deleteProduct/:productId',checkAuth , (req, res, next) => {
     const id = req.params.productId;
     Product.findById(id).exec()
         .then(respond => {
@@ -195,7 +199,9 @@ router.delete('/deleteProduct/:productId', (req, res, next) => {
                 res.status(400).json({
                     done: false,
                     status: 400,
-                    message: "Can't Find this product"
+                    error: {
+                        message: "Can't Find this product"
+                    }
                 })
 
             }
@@ -203,8 +209,10 @@ router.delete('/deleteProduct/:productId', (req, res, next) => {
         .catch(err => {
             res.status(500).json({
                 status: 500,
-                message: err,
-                done: false
+                done: false,
+                error: {
+                    message: err,
+                }
             })
         })
 
