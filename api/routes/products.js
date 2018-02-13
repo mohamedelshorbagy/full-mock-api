@@ -5,51 +5,61 @@ const mongoose = require('mongoose');
 const Product = require('../models/products');
 
 // Create Products
-router.post('/', (req, res, next) => {
+router.post('/createProduct', (req, res, next) => {
     const product = new Product({
         name: req.body.name,
         price: req.body.price
     });
-    product.save()
-        .select("name price _id")
-        .then(result => {
-            if (result) {
-                res.status(200).json({
-                    product: result
+    Product.find({ name: req.body.name })
+        .exec()
+        .then(respond => {
+            if (respond.length >= 1) {
+                console.log("Not");
+                res.status(500).json({
+                    done: false,
+                    status: 500,
+                    message: "This Product is registered"
                 })
             } else {
-                res.status(404).json({
-                    error: {
-                        message: "Product wasn't created, Something Went Worng,try again later"
-                    }
-                })
+                console.log("Save");
+                product.save()
+                    .then(result => {
+                            res.status(200).json({
+                                done: true,
+                                status: 200,
+                                product: result
+                            })
+                    })
+                    .catch(err => {
+                        res.status(404).json({
+                            done: false,
+                            error: {
+                                message: err
+                            }
+                        })
+                    });
             }
         })
-        .catch(err => {
-            res.status(404).json({
-                error: {
-                    message: err
-                }
-            })
-        });
-
 
 });
 
 
 // Get Products
-router.get('/', (req, res, next) => {
+router.get('/getAllProducts', (req, res, next) => {
     Product.find({})
         .select("name price _id")
         .exec()
         .then(results => {
             if (results.length >= 1) {
                 res.status(200).json({
+                    done: true,
+                    status: 200,
                     count: results.length,
                     products: results,
                 })
             } else {
                 res.status(404).json({
+                    done: false,
                     error: {
                         message: "There's Not Producst Right Now"
                     }
@@ -58,6 +68,7 @@ router.get('/', (req, res, next) => {
         })
         .catch(err => {
             res.status(404).json({
+                done: false,
                 error: {
                     message: err
                 }
@@ -68,7 +79,7 @@ router.get('/', (req, res, next) => {
 });
 
 // Get Specific Product
-router.get('/:productId', (req, res, next) => {
+router.get('/getProduct/:productId', (req, res, next) => {
     const id = req.params.productId;
     Product.findById(id)
         .select("name price _id")
@@ -76,10 +87,13 @@ router.get('/:productId', (req, res, next) => {
         .then(result => {
             if (result) {
                 res.status(200).json({
+                    done: true,
+                    status: 200,
                     product: result
                 });
             } else {
                 res.status(404).json({
+                    done: false,
                     error: {
                         message: "There's not product with this id"
                     }
@@ -89,6 +103,7 @@ router.get('/:productId', (req, res, next) => {
         })
         .catch(err => {
             res.status(404).json({
+                done: false,
                 error: {
                     message: err
                 }
@@ -98,76 +113,151 @@ router.get('/:productId', (req, res, next) => {
 
 
 // Update Specific Product 
-router.patch('/:productId', (req, res, next) => {
+router.patch('/updateProduct/:productId', (req, res, next) => {
     const id = req.params.productId;
-    Product.update({ _id: id }, { $set: { name: req.body.name } })
-        .exec()
-        .then(result => {
-            if (result.nModified > 0 && result.n > 0) {
-                res.status(200).json({
-                    message: "Product Updated!",
-                })
+    Product.findById(id).exec()
+        .then(respond => {
+            if (respond) {
+                Product.update({ _id: id }, { $set: { name: req.body.name } })
+                    .exec()
+                    .then(result => {
+                        if (result.nModified > 0 && result.n > 0) {
+                            res.status(200).json({
+                                done: true,
+                                status: 200,
+                                message: "Product Updated!",
+                            })
+                        } else {
+                            res.status(404).json({
+                                done: false,
+                                error: {
+                                    message: "Product is Not Updated"
+                                }
+                            })
+                        }
+                    })
+                    .catch(err => {
+                        res.status(404).json({
+                            done: false,
+                            error: {
+                                message: err
+                            }
+                        })
+                    });
             } else {
-                res.status(404).json({
-                    error: {
-                        message: "Product is Not Updated"
-                    }
+                res.status(403).json({
+                    done: false,
+                    status: 500,
+                    message: "Can't Find this Product"
                 })
             }
         })
         .catch(err => {
-            res.status(404).json({
+            res.status(500).json({
+                done: false,
+                status: 500,
                 error: {
                     message: err
                 }
             })
-        });
+        })
+
 
 })
 
 // Delete Specific Product
-router.delete('/:productId', (req, res, next) => {
+router.delete('/deleteProduct/:productId', (req, res, next) => {
     const id = req.params.productId;
-    Product.remove({ _id: id })
-        .exec()
-        .then(result => {
-            if (result) {
-                res.status(200).json({
-                    message: "Product Removed Successfully!",
-                    data: [{
-                        method: 'POST',
-                        url: "http://localhost:3000/products",
-                        body: "JSON: [ name(string) , price(number) ]",
-                        info: "Create New Product"
-                    }, {
-                        method: 'GET',
-                        url: "http://localhost:3000/products",
-                        info: "Get All Products in Database"
-                    }, {
-                        method: 'GET',
-                        url: "http://localhost:3000/products/:id",
-                        info: "Get Specific Product from its id"
-                    }, {
-                        method: 'DELETE',
-                        url: "http://localhost:3000/products/:id",
-                        info: "Remove Specific Product from its id"
-                    }, {
-                        method: 'PATCH',
-                        url: "http://localhost:3000/products/:id",
-                        body: "JSON: name(string)",
-                        info: "Update Specific Product from its id"
-                    }]
+    Product.findById(id).exec()
+        .then(respond => {
+            if (respond) {
+                Product.remove({ _id: id })
+                    .exec()
+                    .then(result => {
+                        if (result) {
+                            res.status(200).json({
+                                message: "Product Removed Successfully!",
+                                done: true,
+                                status: 200
+                            })
+                        }
+                    })
+                    .catch(err => {
+                        res.status(500).json({
+                            done: false,
+                            error: {
+                                message: err
+                            }                            
+                        })
+
+                    });
+            } else {
+                res.status(400).json({
+                    done: false,
+                    status: 400,
+                    message: "Can't Find this product"
                 })
+
             }
         })
         .catch(err => {
-            error: {
-                message: err
-            }
-        });
+            res.status(500).json({
+                status: 500,
+                message: err,
+                done: false
+            })
+        })
+
 
 
 });
+
+/* HELP Route */
+router.get('/help/:unique', (req, res, next) => {
+    const unique = req.params.unique;
+    if (unique == "admin") {
+        res.status(200).json({
+            status: 200,
+            apis: [{
+                method: 'GET',
+                url: "http://localhost:3000/products/getAllProducts",
+                response: "JSON: { _id(mongoose.id) , count(number of products) , status(number: 200 => success) , name(string) , price(number) }",
+                info: "GET All products"
+            }, {
+                method: 'GET',
+                url: "http://localhost:3000/products/getProduct/:id",
+                response: "JSON: { _id(mongoose.id), status(number: 200 => success) , name(string) , price(number) }",
+                info: "GET Product"
+
+            }, {
+                method: 'POST',
+                url: "http://localhost:3000/products/createProduct",
+                body: "JSON: { product: mongoose.id , number: (number) }",
+                response: "JSON: { _id(mongoose.id) , done([true , false]) , status([200(success) , ...]) , name(string) , price(number) }",
+                info: "Create an Product"
+            }, {
+                method: 'PATCH',
+                url: "http://localhost:3000/products/:id",
+                body: "JSON: { number: (number) }",
+                response: "JSON: { status:([ 200(success) , ... ]) , done: ([ true , false ]) , message:(string) }",
+                info: "Update Number of Order"
+
+            }, {
+                method: 'DELETE',
+                url: "http://localhost:3000/products/:id",
+                response: "JSON: { status: ([ 200(success) , done: ([ true , falase ]) , message: (string) ]) }",
+                info: "Delete Order"
+
+            }]
+        })
+    } else {
+        res.status(409).json({
+            status: 409,
+            message: 'Unauthoriazed'
+        })
+     
+    }
+})
 
 
 
