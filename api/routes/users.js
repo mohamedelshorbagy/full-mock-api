@@ -133,7 +133,7 @@ router.get('/getAllUsers', checkAuth, (req, res, next) => {
 router.get('/getUser/:userId', checkAuth, (res, req, next) => {
     User.findById(req.params.userId)
         .select("email orders")
-        .populate({ path: 'orders', populate: { path: 'product' } })
+        .populate({ path: 'orders', select: { 'number': 1, 'product': 1 }, populate: { path: 'product', select: { 'name': 1, 'price': 1 } } })
         .exec()
         .then(user => {
             if (user) {

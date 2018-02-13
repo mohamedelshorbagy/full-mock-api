@@ -33,9 +33,9 @@ const productsRoute = require('./api/routes/products');
 const ordersRoute = require('./api/routes/orders');
 
 // Call Routes
-app.use('/users' , usersRoute);
-app.use('/products' , productsRoute);
-app.use('/orders' , ordersRoute);
+app.use('/api/users' , usersRoute);
+app.use('/api/products' , productsRoute);
+app.use('/api/orders' , ordersRoute);
 
 // Setup the Errors Handlers 
 
